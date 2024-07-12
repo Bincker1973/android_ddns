@@ -1,15 +1,18 @@
-package cn.bincker.android_ddns
+package cn.bincker.android_ddns.page.main
 
+import android.content.Context
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cn.bincker.android_ddns.config.ConfigurationHelper
 import cn.bincker.android_ddns.service.DispatcherService
 import cn.bincker.android_ddns.utils.IPUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -35,14 +38,14 @@ class MainActivityViewModel: ViewModel() {
             var result = ""
             fun simpleNumFormat(n: Number) = n.toString().let { if (it.length < 2) "0$it" else it }
             if (seconds > 60 * 60000){
-                result += simpleNumFormat(seconds / (60 * 60000)) + ":"
+                result += simpleNumFormat(seconds / (60 * 60000)) + "h"
                 seconds %= 60 * 60000;
             }
             if (seconds > 60000){
-                result += simpleNumFormat(seconds % 60000) + ":"
+                result += simpleNumFormat(seconds % 60000) + "m"
                 seconds %= 60 * 60000;
             }
-            result += seconds.toString()
+            result += seconds.toString() + "s"
             result
         }
     }
@@ -66,10 +69,25 @@ class MainActivityViewModel: ViewModel() {
         }
     }
 
+    private val _domainNameHostingService = mutableStateOf("aliyun")
+    val domainNameHostingService: State<String> = _domainNameHostingService
+
+    fun initDomainNameHostingService(context: Context) {
+        val configHelper = ConfigurationHelper(context)
+        configHelper.sharedPreferences.registerOnSharedPreferenceChangeListener { sp, key ->
+            if (key == "domainNameHostingService"){
+                _domainNameHostingService.value = sp.getString("domainNameHostingService", "aliyun") ?: "aliyun"
+            }
+        }
+        _domainNameHostingService.value = configHelper.domainNameHostingService
+    }
+
     fun refresh() {
-        viewModelScope.launch(context = Dispatchers.IO) {
+        viewModelScope.launch {
             _refreshing.value = true
-            _ipv6Addr.value = IPUtils.getIpv6() ?: ""
+            withContext(Dispatchers.IO) {
+                _ipv6Addr.value = IPUtils.getIpv6() ?: ""
+            }
             _lastCheckTime.longValue = binder?.getLastCheckTime() ?: 0
             _checkTimeInterval.longValue = binder?.getTimeInterval() ?: 0
             _lastIpv6Addr.value = binder?.getLastIpv6Addr() ?: ""

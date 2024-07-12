@@ -1,4 +1,4 @@
-package cn.bincker.android_ddns
+package cn.bincker.android_ddns.page.main
 
 import android.content.ComponentName
 import android.content.Intent
@@ -7,7 +7,9 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,12 +23,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import cn.bincker.android_ddns.page.configuration.ConfigurationActivity
 import cn.bincker.android_ddns.service.DispatcherService
 import cn.bincker.android_ddns.ui.theme.Android_ddnsTheme
+import cn.bincker.android_ddns.ui.theme.Primary
+import cn.bincker.android_ddns.ui.theme.TextDescribe
 
 class MainActivity : ComponentActivity() {
-    val viewModel = MainActivityViewModel()
+    private val viewModel: MainActivityViewModel by viewModels()
     private val dispatcherServiceConnection = object: ServiceConnection{
         override fun onServiceConnected(cn: ComponentName?, binder: IBinder?) {
             viewModel.binder = binder as DispatcherService.DispatchBinder?
@@ -41,14 +51,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             Android_ddnsTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Status(viewModel = viewModel)
+                    RefreshableStatus(viewModel = viewModel)
                 }
             }
         }
         startService(Intent(baseContext, DispatcherService::class.java))
         bindService(Intent(baseContext, DispatcherService::class.java), dispatcherServiceConnection, BIND_AUTO_CREATE)
+        viewModel.initDomainNameHostingService(applicationContext)
     }
 
     override fun onDestroy() {
@@ -59,7 +69,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Status(modifier: Modifier = Modifier, viewModel: MainActivityViewModel) {
+fun RefreshableStatus(viewModel: MainActivityViewModel) {
     val swipeRefreshState = rememberPullToRefreshState()
     if (swipeRefreshState.isRefreshing){
         viewModel.refresh()
@@ -70,21 +80,55 @@ fun Status(modifier: Modifier = Modifier, viewModel: MainActivityViewModel) {
         }
     }
     Box(modifier = Modifier.nestedScroll(swipeRefreshState.nestedScrollConnection)) {
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0))) {
-            Text("IPv6地址：" + viewModel.ipv6Addr.value)
-            Text("检测时间间隔：" + viewModel.checkTimeIntervalStr.value)
-            Text("上一次检测时间：" + viewModel.lastCheckTimeStr.value)
-            Text("上一次检测IP地址：" + viewModel.lastIpv6Addr.value)
-            Text("下一次检测时间：" + viewModel.nextCheckTime.value)
-        }
+        Status(viewModel = viewModel)
         PullToRefreshContainer(state = swipeRefreshState, modifier = Modifier.align(Alignment.TopCenter))
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    Android_ddnsTheme {
-        Status(viewModel = MainActivityViewModel())
+fun Status(viewModel: MainActivityViewModel){
+    val context = LocalContext.current
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0)), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("DDNS", fontSize = 72.sp, fontWeight = FontWeight.Bold, color = Primary, modifier = Modifier.padding(top = 20.dp))
+        Text("on Android", fontSize = 20.sp, color = TextDescribe, modifier = Modifier.padding(bottom = 50.dp))
+        InfoRow {
+            Text("Your IPv6 addr: ")
+            Text(viewModel.ipv6Addr.value, color = TextDescribe, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        InfoRow {
+            Text("Interval: ")
+            Text(viewModel.checkTimeIntervalStr.value, color = TextDescribe)
+        }
+        InfoRow {
+            Text("Check time: ")
+            Text(viewModel.lastCheckTimeStr.value, color = TextDescribe)
+        }
+        InfoRow {
+            Text("Check IPv6 addr: ")
+            Text(viewModel.lastIpv6Addr.value, color = TextDescribe, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        InfoRow {
+            Text("Next time: ")
+            Text(viewModel.nextCheckTime.value, color = TextDescribe)
+        }
+        InfoRow({
+            context.startActivity(Intent(context, ConfigurationActivity::class.java))
+        }) {
+            Text("Domain name hosting service: ")
+            Text(viewModel.domainNameHostingService.value, color = TextDescribe)
+        }
     }
+}
+
+@Composable
+fun InfoRow(onClick: ()->Unit = {}, content: @Composable RowScope.() -> Unit) {
+    Row(modifier = Modifier.fillMaxSize().clickable(onClick = onClick).padding(50.dp, 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        content()
+    }
+}
+
+@Preview
+@Composable
+fun StatusPreview(){
+    Status(MainActivityViewModel())
 }

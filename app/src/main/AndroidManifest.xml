@@ -15,6 +15,10 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.Android_ddns"
             tools:targetApi="31">
+        <activity
+                android:name=".page.configuration.ConfigurationActivity"
+                android:exported="false"/>
+
         <service
                 android:name=".service.DDNSService"
                 android:enabled="true"
@@ -35,7 +39,7 @@
         </receiver>
 
         <activity
-                android:name=".MainActivity"
+                android:name=".page.main.MainActivity"
                 android:exported="true"
                 android:label="@string/app_name"
                 android:theme="@style/Theme.Android_ddns">
