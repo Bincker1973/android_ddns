@@ -78,6 +78,8 @@ class DispatcherService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (timer == null || System.currentTimeMillis() - lastCheckTime > timeInterval){
+            timer?.cancel()
+            timer?.purge()
             timer = Timer()
             timer!!.schedule(task, 0, timeInterval)
         }

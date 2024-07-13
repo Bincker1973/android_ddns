@@ -1,11 +1,11 @@
 package cn.bincker.android_ddns.page.main
 
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
+import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -100,7 +100,12 @@ fun Status(viewModel: MainActivityViewModel){
     Column(modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0)), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("DDNS", fontSize = 72.sp, fontWeight = FontWeight.Bold, color = LightPrimary, modifier = Modifier.padding(top = 20.dp))
         Text("on Android", fontSize = 20.sp, color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(bottom = 50.dp))
-        InfoRow {
+        InfoRow({
+            context.getSystemService(ClipboardManager::class.java)?.let {
+                it.setPrimaryClip(ClipData.newPlainText("ipaddr", viewModel.ipv6Addr.value))
+                Toast.makeText(context, "IP copied to clipboard.", Toast.LENGTH_SHORT).show()
+            }
+        }) {
             Text("Your IPv6 addr: ")
             Text(viewModel.ipv6Addr.value, color = MaterialTheme.colorScheme.outlineVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -130,7 +135,13 @@ fun Status(viewModel: MainActivityViewModel){
         Column(modifier = Modifier.weight(1f).fillMaxSize()) {
             Logs(viewModel)
             Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("https://github.com", modifier = Modifier.padding(top = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                Text(
+                    "https://github.com/Bincker1973/android_ddns",
+                    modifier = Modifier.padding(top = 20.dp).clickable {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Bincker1973")))
+                    },
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
                 Button({
                     context.startService(Intent(context, DDNSService::class.java))
                 }, modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp).fillMaxWidth()) {
@@ -153,8 +164,9 @@ fun Logs(viewModel: MainActivityViewModel){
     val listState = rememberLazyListState()
     val logs by viewModel.logs
     LaunchedEffect(logs.size){
-        Log.d("MainActivity", "update log scroll")
-        listState.animateScrollToItem(logs.size - 1)
+        if (logs.isNotEmpty()){
+            listState.animateScrollToItem(logs.size - 1)
+        }
     }
     LazyColumn(state = listState, modifier = Modifier.padding(vertical = 20.dp).fillMaxWidth().height(260.dp)) {
         items(logs) {item->
