@@ -1,18 +1,20 @@
 package cn.bincker.android_ddns.page.main
 
 import android.content.Context
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
+import android.util.Log
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.StateObject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cn.bincker.android_ddns.config.ConfigurationHelper
 import cn.bincker.android_ddns.service.DispatcherService
 import cn.bincker.android_ddns.utils.IPUtils
+import cn.bincker.android_ddns.utils.SimpleLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.internal.readOnly
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -37,15 +39,17 @@ class MainActivityViewModel: ViewModel() {
             var seconds = _checkTimeInterval.longValue / 1000
             var result = ""
             fun simpleNumFormat(n: Number) = n.toString().let { if (it.length < 2) "0$it" else it }
-            if (seconds > 60 * 60000){
-                result += simpleNumFormat(seconds / (60 * 60000)) + "h"
-                seconds %= 60 * 60000;
+            if (seconds > 60 * 60){
+                result += simpleNumFormat(seconds / (60 * 60)) + "h"
+                seconds %= 60 * 60
             }
-            if (seconds > 60000){
-                result += simpleNumFormat(seconds % 60000) + "m"
-                seconds %= 60 * 60000;
+            if (seconds > 60){
+                result += simpleNumFormat(seconds / 60) + "m"
+                seconds %= 60
             }
-            result += seconds.toString() + "s"
+            if (seconds > 0){
+                result += seconds.toString() + "s"
+            }
             result
         }
     }
@@ -63,7 +67,7 @@ class MainActivityViewModel: ViewModel() {
 
     val nextCheckTime: State<String> = derivedStateOf {
         if (_lastCheckTime.longValue == 0L){
-            "-"
+            SimpleDateFormat.getDateTimeInstance().format(Date(System.currentTimeMillis() + _checkTimeInterval.longValue))
         }else{
             SimpleDateFormat.getDateTimeInstance().format(Date(_lastCheckTime.longValue + _checkTimeInterval.longValue))
         }
@@ -71,6 +75,19 @@ class MainActivityViewModel: ViewModel() {
 
     private val _domainNameHostingService = mutableStateOf("aliyun")
     val domainNameHostingService: State<String> = _domainNameHostingService
+
+    private var _logs = mutableStateOf(SimpleLogger.getInstance().getLogs())
+    val logs: State<List<String>> = _logs
+
+    init {
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                _logs.value = emptyList()
+                _logs.value = SimpleLogger.getInstance().getLogs()
+            }
+        }
+    }
 
     fun initDomainNameHostingService(context: Context) {
         val configHelper = ConfigurationHelper(context)
@@ -83,14 +100,16 @@ class MainActivityViewModel: ViewModel() {
     }
 
     fun refresh() {
+        _refreshing.value = true
         viewModelScope.launch {
-            _refreshing.value = true
             withContext(Dispatchers.IO) {
+                Log.d("MainActivityViewModel", "refresh: get current ipv6")
                 _ipv6Addr.value = IPUtils.getIpv6() ?: ""
             }
             _lastCheckTime.longValue = binder?.getLastCheckTime() ?: 0
             _checkTimeInterval.longValue = binder?.getTimeInterval() ?: 0
             _lastIpv6Addr.value = binder?.getLastIpv6Addr() ?: ""
+            _refreshing.value = false
         }
     }
 }
