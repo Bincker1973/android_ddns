@@ -2,8 +2,10 @@ package cn.bincker.android_ddns.page.main
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.StateObject
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cn.bincker.android_ddns.config.ConfigurationHelper
@@ -14,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.internal.readOnly
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -28,10 +29,8 @@ class MainActivityViewModel: ViewModel() {
     val ipv6Addr: State<String> = _ipv6Addr
 
     private val _lastCheckTime = mutableLongStateOf(0L)
-    val lastCheckTime: State<Long> = _lastCheckTime
 
     private val _checkTimeInterval = mutableLongStateOf(0L)
-    val checkTimeInterval: State<Long> = _checkTimeInterval
     val checkTimeIntervalStr: State<String> = derivedStateOf {
         if (_checkTimeInterval.longValue == 0L){
             "-"
@@ -85,6 +84,14 @@ class MainActivityViewModel: ViewModel() {
                 delay(1000)
                 _logs.value = emptyList()
                 _logs.value = SimpleLogger.getInstance().getLogs()
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                delay((binder?.getTimeInterval() ?: 1000) - (System.currentTimeMillis() - (binder?.getLastCheckTime() ?: System.currentTimeMillis())))
+                _lastCheckTime.longValue = binder?.getLastCheckTime() ?: 0
+                _checkTimeInterval.longValue = binder?.getTimeInterval() ?: 0
+                _lastIpv6Addr.value = binder?.getLastIpv6Addr() ?: ""
             }
         }
     }

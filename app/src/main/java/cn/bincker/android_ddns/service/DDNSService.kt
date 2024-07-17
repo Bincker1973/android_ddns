@@ -2,17 +2,12 @@ package cn.bincker.android_ddns.service
 
 import android.app.Service
 import android.content.Intent
-import android.os.*
-import android.util.Log
+import android.os.Binder
+import android.os.IBinder
 import cn.bincker.android_ddns.config.ConfigurationHelper
 import cn.bincker.android_ddns.ddns.HostingService
 import cn.bincker.android_ddns.utils.IPUtils
 import cn.bincker.android_ddns.utils.SimpleLogger
-import com.aliyun.auth.credentials.Credential
-import com.aliyun.auth.credentials.provider.StaticCredentialProvider
-import com.aliyun.sdk.service.alidns20150109.AsyncClient
-import com.aliyun.sdk.service.alidns20150109.models.DescribeDomainRecordsRequest
-import darabonba.core.client.ClientOverrideConfiguration
 import kotlinx.coroutines.*
 
 
@@ -23,7 +18,7 @@ class DDNSService : Service() {
     private val notifyLock = Object()
     private val binder = DDNSBinder(notifyLock)
 
-    override fun onBind(intent: Intent): IBinder? {
+    override fun onBind(intent: Intent): IBinder {
         return binder
     }
 
@@ -64,7 +59,7 @@ class DDNSService : Service() {
         return START_NOT_STICKY
     }
 
-    class DDNSBinder(private val lock: Object): Binder(){
+    class DDNSBinder(@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN") private val lock: Object): Binder(){
         var addr: String? = null
         var result: HostingService.RecordInfo? = null
         fun waitComplete(){
