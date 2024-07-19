@@ -109,14 +109,17 @@ class MainActivityViewModel: ViewModel() {
     fun refresh() {
         _refreshing.value = true
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                Log.d("MainActivityViewModel", "refresh: get current ipv6")
-                _ipv6Addr.value = IPUtils.getIpv6() ?: ""
+            try {
+                withContext(Dispatchers.IO) {
+                    Log.d("MainActivityViewModel", "refresh: get current ipv6")
+                    _ipv6Addr.value = IPUtils.getIpv6() ?: ""
+                }
+                _lastCheckTime.longValue = binder?.getLastCheckTime() ?: 0
+                _checkTimeInterval.longValue = binder?.getTimeInterval() ?: 0
+                _lastIpv6Addr.value = binder?.getLastIpv6Addr() ?: ""
+            }finally {
+                _refreshing.value = false
             }
-            _lastCheckTime.longValue = binder?.getLastCheckTime() ?: 0
-            _checkTimeInterval.longValue = binder?.getTimeInterval() ?: 0
-            _lastIpv6Addr.value = binder?.getLastIpv6Addr() ?: ""
-            _refreshing.value = false
         }
     }
 }

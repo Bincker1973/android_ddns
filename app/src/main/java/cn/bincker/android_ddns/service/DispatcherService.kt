@@ -68,8 +68,10 @@ class DispatcherService : Service() {
         configHelper.sharedPreferences.registerOnSharedPreferenceChangeListener { sharedPreferences, key ->
             if (key == "checkTimeInterval"){
                 timeInterval = configHelper.checkTimeInterval
-                timer?.cancel()
-                timer?.purge()
+                try {
+                    timer?.cancel()
+                    timer?.purge()
+                }catch (_:Exception){}
                 timer = Timer()
                 timer?.schedule(task, timeInterval, timeInterval)
             }
@@ -78,8 +80,10 @@ class DispatcherService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (timer == null || System.currentTimeMillis() - lastCheckTime > timeInterval){
-            timer?.cancel()
-            timer?.purge()
+            try {
+                timer?.cancel()
+                timer?.purge()
+            }catch (_:Exception){}
             timer = Timer()
             timer!!.schedule(task, 0, timeInterval)
         }
