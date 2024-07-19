@@ -14,6 +14,12 @@ abstract class HostingService {
         }
     }
 
+    /**
+     * 检测和更新
+     * @param currentAddr 当前IPv6地址
+     * @param configHelper 配置读取助手
+     * @return 新增/更新的域名信息
+     */
     abstract fun checkAndUpdate(currentAddr: String, configHelper: ConfigurationHelper): RecordInfo?
 
     fun logger() = SimpleLogger.getInstance()

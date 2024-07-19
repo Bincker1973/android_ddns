@@ -95,7 +95,7 @@ fun Status(viewModel: MainActivityViewModel){
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().verticalScroll(ScrollState(0)), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("DDNS", fontSize = 72.sp, fontWeight = FontWeight.Bold, color = LightPrimary, modifier = Modifier.padding(top = 20.dp))
-        Text("on Android", fontSize = 20.sp, color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(bottom = 50.dp))
+        Text("for Android", fontSize = 20.sp, color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(bottom = 50.dp))
         InfoRow({
             context.getSystemService(ClipboardManager::class.java)?.let {
                 it.setPrimaryClip(ClipData.newPlainText("ipaddr", viewModel.ipv6Addr.value))
