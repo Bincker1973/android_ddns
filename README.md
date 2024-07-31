@@ -1,7 +1,7 @@
 # DDNS for Android
 
 一个简单的DDNS应用，目前只支持AliYun托管的域名DDNS  
-![image](./android_ddns.jpg)
+<img src="https://github.com/bit8192/android_ddns/blob/main/android_ddns.jpg" width="400px">
 
 ## 特点：
 - 支持Aliyun
